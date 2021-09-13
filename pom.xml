@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example.twister1803</groupId>
-    <artifactId>httpFramework</artifactId>
+    <groupId>org.example</groupId>
+    <artifactId>http-server</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -29,6 +29,18 @@
             <artifactId>classgraph</artifactId>
             <version>${classgraph.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.2.23</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.26</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -79,5 +91,4 @@
             <url>https://maven.pkg.github.com/twister1803/httpFramework</url>
         </repository>
     </distributionManagement>
-
 </project>
