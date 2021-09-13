@@ -88,7 +88,7 @@
     <distributionManagement>
         <repository>
             <id>github</id>
-            <url>https://github.com/twister1803/httpFramework</url>
+            <url>https://maven.pkg.github.com/twister1803/httpFramework</url>
         </repository>
     </distributionManagement>
 
