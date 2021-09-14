@@ -14,6 +14,8 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -23,8 +25,7 @@ import java.util.stream.Collectors;
 
 @Log
 public class Server {
-    private int port;
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private static final byte[] CRLF = new byte[]{'\r', '\n'};
     private static final byte[] CRLFCRLF = new byte[]{'\r', '\n', '\r', '\n'};
     private final static int headersLimit = 4096;
@@ -35,12 +36,11 @@ public class Server {
         return thread;
     });
 
-    public Server(int port) {
-        this.port = port;
+    public Server(final int port) {
         try {
             serverSocket = new ServerSocket(port);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new ServerException(e);
         }
     }
 
@@ -144,6 +144,8 @@ public class Server {
                 final var socket = serverSocket.accept();
                 service.submit(() -> handle(socket));
             }
+        } catch (SocketException e) {
+            log.log(Level.INFO, "server stopped");
 
         } catch (IOException e) {
             throw new ServerException(e);
@@ -159,7 +161,7 @@ public class Server {
         try (
                 socket;
                 final var in = new BufferedInputStream(socket.getInputStream());
-                final var out = new BufferedOutputStream(socket.getOutputStream());
+                final var out = new BufferedOutputStream(socket.getOutputStream())
         ) {
             log.log(Level.INFO, "connected: " + socket.getPort());
             final var buffer = new byte[headersLimit];
@@ -181,6 +183,28 @@ public class Server {
                 final var method = requestLineParts[0];
                 // TODO: uri split ? -> URLDecoder
                 final var uri = requestLineParts[1];
+
+                Map<String, List<String>> query = new HashMap<>();
+                final var splitUri = uri.split("[?]", 2);
+                var path = splitUri[0];
+
+                if (splitUri.length == 2) {
+                    final var queryRaw = splitUri[1];
+                /*
+                Парсинг query
+                 */
+                    final var queryParams = queryRaw.split("&");
+                    for (String queryParam : queryParams) {
+                        final String[] split = queryParam.split("=", 2); //get key and value for each params
+                        final var key = URLDecoder.decode(split[0], StandardCharsets.UTF_8);
+                        final var value = URLDecoder.decode(split[1], StandardCharsets.UTF_8);
+                        if (query.containsKey(key)) {
+                            query.get(key).add(value);
+                        } else {
+                            query.put(key, new ArrayList<>(List.of(value)));
+                        }
+                    }
+                }
 
                 final var headersEndIndex = Bytes.indexOf(buffer, CRLFCRLF, requestLineEndIndex, read) + CRLFCRLF.length;
                 if (headersEndIndex == 3) {
@@ -216,13 +240,32 @@ public class Server {
                 in.reset();
                 in.skipNBytes(headersEndIndex);
                 final var body = in.readNBytes(contentLength);
+                /*
+                Парсинг body
+                 */
+                final Map<String, List<String>> form = new HashMap<>();
+                if (headers.containsKey("Content-Type") && headers.get("Content-Type").equals("application/x-www-form-urlencoded")) {
+                    final var bodyToString = new String(body);
+                    final var bodyParams = bodyToString.split("&");
+                    for (String bodyParam : bodyParams) {
+                        final String[] split = bodyParam.split("=", 2); //get key and value for each params
+                        final var key = split[0];
+                        final var value = split[1];
+                        if (form.containsKey(key)) {
+                            form.get(key).add(value);
+                        } else {
+                            form.put(key, new ArrayList<>(List.of(value)));
+                        }
+                    }
+                }
 
-                // TODO: annotation monkey
                 final var request = Request.builder()
                         .method(method)
-                        .path(uri)
+                        .path(path)
                         .headers(headers)
+                        .query(query)
                         .body(body)
+                        .form(form)
                         .build();
 
                 final var response = out;
