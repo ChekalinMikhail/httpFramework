@@ -29,6 +29,7 @@
             <artifactId>classgraph</artifactId>
             <version>${classgraph.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
