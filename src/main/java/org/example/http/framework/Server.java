@@ -184,23 +184,12 @@ public class Server {
                 // TODO: uri split ? -> URLDecoder
                 final var uri = requestLineParts[1];
 
-                Map<String, List<String>> query = new HashMap<>();
                 final var splitUri = uri.split("[?]", 2);
                 var path = splitUri[0];
 
+                Map<String, List<String>> query = new HashMap<>();
                 if (splitUri.length == 2) {
-                    final var queryRaw = splitUri[1];
-                    final var queryParams = queryRaw.split("&");
-                    for (String queryParam : queryParams) {
-                        final String[] split = queryParam.split("=", 2); //get key and value for each params
-                        final var key = URLDecoder.decode(split[0], StandardCharsets.UTF_8);
-                        final var value = URLDecoder.decode(split[1], StandardCharsets.UTF_8);
-                        if (query.containsKey(key)) {
-                            query.get(key).add(value);
-                        } else {
-                            query.put(key, new ArrayList<>(List.of(value)));
-                        }
-                    }
+                    query = parseQuery(splitUri[1]);
                 }
 
                 final var headersEndIndex = Bytes.indexOf(buffer, CRLFCRLF, requestLineEndIndex, read) + CRLFCRLF.length;
@@ -238,20 +227,9 @@ public class Server {
                 in.skipNBytes(headersEndIndex);
                 final var body = in.readNBytes(contentLength);
 
-                final Map<String, List<String>> form = new HashMap<>();
+                Map<String, List<String>> form = new HashMap<>();
                 if (headers.containsKey("Content-Type") && headers.get("Content-Type").equals("application/x-www-form-urlencoded")) {
-                    final var bodyToString = new String(body);
-                    final var bodyParams = bodyToString.split("&");
-                    for (String bodyParam : bodyParams) {
-                        final String[] split = bodyParam.split("=", 2); //get key and value for each params
-                        final var key = split[0];
-                        final var value = split[1];
-                        if (form.containsKey(key)) {
-                            form.get(key).add(value);
-                        } else {
-                            form.put(key, new ArrayList<>(List.of(value)));
-                        }
-                    }
+                    form = parseBody(new String(body));
                 }
 
                 final var request = Request.builder()
@@ -318,5 +296,25 @@ public class Server {
             e.printStackTrace();
             // TODO:
         }
+    }
+
+    private Map<String, List<String>> parseQuery(String queryRaw) {
+        Map<String, List<String>> query = new HashMap<>();
+        final var queryParams = queryRaw.split("&");
+        for (String queryParam : queryParams) {
+            final String[] split = queryParam.split("=", 2); //get key and value for each params
+            final var key = URLDecoder.decode(split[0], StandardCharsets.UTF_8);
+            final var value = URLDecoder.decode(split[1], StandardCharsets.UTF_8);
+            if (query.containsKey(key)) {
+                query.get(key).add(value);
+            } else {
+                query.put(key, new ArrayList<>(List.of(value)));
+            }
+        }
+        return query;
+    }
+
+    private Map<String, List<String>> parseBody(String body) {
+        return parseQuery(body);
     }
 }
