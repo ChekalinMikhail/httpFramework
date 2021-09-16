@@ -190,9 +190,6 @@ public class Server {
 
                 if (splitUri.length == 2) {
                     final var queryRaw = splitUri[1];
-                /*
-                Парсинг query
-                 */
                     final var queryParams = queryRaw.split("&");
                     for (String queryParam : queryParams) {
                         final String[] split = queryParam.split("=", 2); //get key and value for each params
@@ -240,9 +237,7 @@ public class Server {
                 in.reset();
                 in.skipNBytes(headersEndIndex);
                 final var body = in.readNBytes(contentLength);
-                /*
-                Парсинг body
-                 */
+
                 final Map<String, List<String>> form = new HashMap<>();
                 if (headers.containsKey("Content-Type") && headers.get("Content-Type").equals("application/x-www-form-urlencoded")) {
                     final var bodyToString = new String(body);
