@@ -184,7 +184,7 @@ public class Server {
                 // TODO: uri split ? -> URLDecoder
                 final var uri = requestLineParts[1];
 
-                final var splitUri = uri.split("[?]", 2);
+                final var splitUri = uri.split("\\?", 2);
                 var path = splitUri[0];
 
                 Map<String, List<String>> query = new HashMap<>();
